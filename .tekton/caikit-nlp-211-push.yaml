@@ -12,7 +12,6 @@ metadata:
       event == "push" 
       && target_branch == "rhoai-2.11" 
       && ( !".tekton/**".pathChanged() || ".tekton/caikit-nlp-211-push.yaml".pathChanged() ) 
-      && !"config/base/params.env".pathChanged()
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: caikit-nlp
@@ -21,6 +20,8 @@ metadata:
   name: caikit-nlp-211-on-push
   namespace: rhoai-tenant
 spec:
+  timeouts:
+    pipeline: "2h30m"
   params:
   - name: git-url
     value: '{{source_url}}'
@@ -244,6 +245,7 @@ spec:
         - name: kind
           value: task
         resolver: bundles
+      timeout: "0"
       when:
       - input: $(tasks.init.results.build)
         operator: in
