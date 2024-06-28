@@ -6,7 +6,6 @@ RUN microdnf update -y && \
     pip install --upgrade --no-cache-dir pip wheel && \
     microdnf clean all
 
-FROM base as builder
 WORKDIR /build
 
 RUN pip install --no-cache tox
@@ -19,15 +18,12 @@ RUN --mount=source=.git,target=.git,type=bind \
     --mount=type=cache,target=/root/.cache/pip \
      tox -e build
 
-
-FROM base as deploy
-
 RUN python -m venv --upgrade-deps /opt/caikit/
 
 ENV VIRTUAL_ENV=/opt/caikit
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY --from=builder /build/dist/caikit_nlp*.whl /tmp/
+RUN cp /build/dist/caikit_nlp*.whl /tmp/
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install /tmp/caikit_nlp*.whl && \
     rm /tmp/caikit_nlp*.whl
