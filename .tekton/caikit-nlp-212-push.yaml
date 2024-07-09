@@ -22,7 +22,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rhoai-tenant/caikit-nlp/caikit-nlp-212:{{revision}}
+    value: quay.io/modh/caikit-nlp:{{target_branch}}
   - name: dockerfile
     value: Dockerfile
   pipelineSpec:
@@ -413,6 +413,9 @@ spec:
       params:
       - name: IMAGE
         value: $(tasks.build-container.results.IMAGE_URL)
+      - name: ADDITIONAL_TAGS
+        value:
+          - '{{target_branch}}-{{revision}}'
       runAfter:
       - build-container
       taskRef:
