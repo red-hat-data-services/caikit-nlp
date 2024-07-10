@@ -30,6 +30,8 @@ spec:
     value: Dockerfile
   - name: path-context
     value: .
+  - name: prefetch-input
+    value: '{"type": "pip", "path": "."}'
   pipelineSpec:
     finally:
     - name: show-sbom
