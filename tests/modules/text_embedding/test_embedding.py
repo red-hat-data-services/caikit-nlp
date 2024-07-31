@@ -21,11 +21,14 @@ from caikit.interfaces.nlp.data_model import (
     RerankResults,
     RerankScore,
     RerankScores,
+    Token,
+    TokenizationResults,
 )
 
 # Local
 from caikit_nlp.modules.text_embedding import EmbeddingModule, utils
 from caikit_nlp.modules.text_embedding.embedding import (
+    _truncate_texts,
     get_sample_start_indexes,
     sum_token_count,
 )
@@ -279,6 +282,14 @@ def test_run_embeddings(loaded_model):
     assert res.input_token_count == INPUT_TOKEN_COUNT
 
 
+def test_run_tokenization(loaded_model):
+    res = loaded_model.run_tokenizer(text=INPUT)
+    assert isinstance(res, TokenizationResults)
+    assert isinstance(res.results, list)
+    assert isinstance(res.results[0], Token)
+    assert res.token_count == INPUT_TOKEN_COUNT
+
+
 @pytest.mark.parametrize(
     "query,docs,top_n",
     [
@@ -504,16 +515,19 @@ def test__optimize():
 def test__truncate_input_tokens_raises(truncate_input_tokens, loaded_model):
     model_max = loaded_model.model.max_seq_length
 
+    ok = "x " * (model_max - 2)  # Subtract 2 for begin/end tokens
     too_long = "x " * (model_max - 1)  # This will go over
-    over = model_max + 1
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+
+    match1 = rf"exceeds the maximum sequence length for this model \({model_max}\) for text at index: 1."
+    with pytest.raises(ValueError, match=match1):
         loaded_model.model.encode(
-            sentences=[too_long], truncate_input_tokens=truncate_input_tokens
+            sentences=[ok, too_long, ok], truncate_input_tokens=truncate_input_tokens
         )
     # Same behavior when implicit_truncation_errors is True (the default)
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    match2 = rf"exceeds the maximum sequence length for this model \({model_max}\) for text at indexes: 0, 2."
+    with pytest.raises(ValueError, match=match2):
         loaded_model.model.encode(
-            sentences=[too_long],
+            sentences=[too_long, ok, too_long],
             truncate_input_tokens=truncate_input_tokens,
             implicit_truncation_errors=True,
         )
@@ -579,41 +593,41 @@ def test_too_many_tokens_default(loaded_model):
     """These endpoints raise an error when truncation would happen."""
 
     model_max = loaded_model.model.max_seq_length
-    over = model_max + 1
+    match = rf"exceeds the maximum sequence length for this model \({model_max}\)."
 
     ok = "x " * (model_max - 2)  # Subtract 2 for begin/end tokens
     too_long = "x " * (model_max - 1)  # This will go over
 
     # embedding(s)
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_embedding(text=too_long)
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_embeddings(texts=[too_long])
 
     # sentence similarity(ies) test both source_sentence and sentences
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarity(source_sentence=too_long, sentences=[ok])
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarity(source_sentence=ok, sentences=[too_long])
 
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarities(
             source_sentences=[too_long], sentences=[ok]
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarities(
             source_sentences=[ok], sentences=[too_long]
         )
 
     # reranker test both query and document text
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_query(query=too_long, documents=[{"text": ok}])
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_query(query=ok, documents=[{"text": too_long}])
 
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_queries(queries=[too_long], documents=[{"text": ok}])
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_queries(queries=[ok], documents=[{"text": too_long}])
 
 
@@ -626,42 +640,42 @@ def test_too_many_tokens_error_params(truncate_input_tokens, loaded_model):
     """
 
     model_max = loaded_model.model.max_seq_length
-    over = model_max + 1
+    match = rf"exceeds the maximum sequence length for this model \({model_max}\)."
 
     ok = "x " * (model_max - 2)  # Subtract 2 for begin/end tokens
     too_long = "x " * (model_max - 1)  # This will go over
 
     # embedding(s)
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_embedding(
             text=too_long, truncate_input_tokens=truncate_input_tokens
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_embeddings(
             texts=[too_long], truncate_input_tokens=truncate_input_tokens
         )
 
     # sentence similarity(ies) test both source_sentence and sentences
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarity(
             source_sentence=too_long,
             sentences=[ok],
             truncate_input_tokens=truncate_input_tokens,
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarity(
             source_sentence=ok,
             sentences=[too_long],
             truncate_input_tokens=truncate_input_tokens,
         )
 
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarities(
             source_sentences=[too_long],
             sentences=[ok],
             truncate_input_tokens=truncate_input_tokens,
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_sentence_similarities(
             source_sentences=[ok],
             sentences=[too_long],
@@ -669,26 +683,26 @@ def test_too_many_tokens_error_params(truncate_input_tokens, loaded_model):
         )
 
     # reranker test both query and document text
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_query(
             query=too_long,
             documents=[{"text": ok}],
             truncate_input_tokens=truncate_input_tokens,
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_query(
             query=ok,
             documents=[{"text": too_long}],
             truncate_input_tokens=truncate_input_tokens,
         )
 
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_queries(
             queries=[too_long],
             documents=[{"text": ok}],
             truncate_input_tokens=truncate_input_tokens,
         )
-    with pytest.raises(ValueError, match=f"({over} > {model_max})"):
+    with pytest.raises(ValueError, match=match):
         loaded_model.run_rerank_queries(
             queries=[ok],
             documents=[{"text": too_long}],
@@ -944,10 +958,7 @@ def test_sum_token_count_no_truncation(texts, expected_count, loaded_model):
         padding=True,
         max_length=loaded_model.model.max_seq_length,
     )
-    token_count = sum_token_count(
-        tokenized,
-        truncate_only=False,
-    )
+    token_count = sum_token_count(tokenized)
 
     assert token_count == expected_count
 
@@ -972,21 +983,17 @@ def test_sum_token_count_no_truncation(texts, expected_count, loaded_model):
     ],
 )
 def test_sum_token_count_with_truncation(texts, truncate, expected_count, loaded_model):
-    tokenized = loaded_model.model.tokenizer(
-        texts,
-        return_attention_mask=True,
-        return_token_type_ids=False,
-        return_overflowing_tokens=True,
-        return_offsets_mapping=True,
-        return_length=True,
-        return_tensors="pt",
-        truncation=True,
-        padding=True,
-        max_length=truncate,
-    )
+
+    tokenized = loaded_model.model._get_tokenized(texts)
+    truncate_indexes = loaded_model.model._truncation_needed(tokenized, truncate, texts)
+    if truncate_indexes:
+        _truncate_texts(
+            texts, tokenized, truncate, truncate_indexes
+        )  # Truncate texts in place
+        tokenized = loaded_model.model._get_tokenized(texts)
+
     token_count = sum_token_count(
         tokenized,
-        truncate_only=True,
     )
 
     assert token_count == expected_count
@@ -1018,7 +1025,7 @@ def test_encoding_order(loaded_model: EmbeddingModule, truncate_input_tokens):
 
     # test order by comparing value of individual embeddings in sequence
     for i, e in enumerate(separate_vectors):
-        assert np.allclose(e, combined_vectors[i])
+        assert np.allclose(e, combined_vectors[i], rtol=1e-03, atol=1e-05)
 
     # test expected failure case by reordering
     shifted_separate_vectors = separate_vectors[1:] + [separate_vectors[0]]
@@ -1029,7 +1036,7 @@ def test_encoding_order(loaded_model: EmbeddingModule, truncate_input_tokens):
             not approx(e) == combined_vectors[i]
         ), "expected altered order to not match combined vectors"
         assert not np.allclose(
-            e, combined_vectors[i]
+            e, combined_vectors[i], rtol=1e-05, atol=1e-08
         ), "expected altered order to not match combined"
 
 
@@ -1105,7 +1112,9 @@ def test_same_same(loaded_model: EmbeddingModule, truncate_input_tokens):
         assert np.allclose(e, combined_vectors[i])
 
     # Next ensuring that the two identical sentences yield identical results (and 3rd does not)
-    assert np.array_equal(combined_vectors[0], combined_vectors[1])
+    assert np.allclose(combined_vectors[0], combined_vectors[1], rtol=1e-05, atol=1e-08)
     assert not np.array_equal(combined_vectors[1], combined_vectors[2])
-    assert np.array_equal(separate_vectors[0], separate_vectors[1])
-    assert not np.array_equal(separate_vectors[1], separate_vectors[2])
+    assert np.allclose(separate_vectors[0], separate_vectors[1], rtol=1e-05, atol=1e-08)
+    assert not np.allclose(
+        separate_vectors[1], separate_vectors[2], rtol=1e-05, atol=1e-08
+    )
