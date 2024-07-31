@@ -6,8 +6,11 @@ metadata:
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "rhoai-2.12"
+    build.appstudio.openshift.io/build-nudge-files: ".*.env, .*.json"
+    pipelinesascode.tekton.dev/on-cel-expression: 
+      event == "push" 
+      && target_branch == "rhoai-2.12"
+      && ( !".tekton/**".pathChanged() || ".tekton/caikit-212-nlp-push.yaml".pathChanged() )
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: caikit-nlp
@@ -22,7 +25,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/modh/caikit-nlp:{{revision}}
+    value: quay.io/modh/caikit-nlp:{{target_branch}}
   - name: dockerfile
     value: Dockerfile
   pipelineSpec:
@@ -415,6 +418,9 @@ spec:
       params:
       - name: IMAGE
         value: $(tasks.build-container.results.IMAGE_URL)
+      - name: ADDITIONAL_TAGS
+        value: 
+          - '{{target_branch}}-{{revision}}'
       runAfter:
       - build-container
       taskRef:
