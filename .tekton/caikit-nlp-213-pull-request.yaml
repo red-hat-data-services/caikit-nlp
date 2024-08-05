@@ -7,8 +7,10 @@ metadata:
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
-      == "rhoai-2.13"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" 
+      && target_branch == "rhoai-2.13"
+      && ( !".tekton/**".pathChanged() || ".tekton/caikit-nlp-213-pull-request.yaml".pathChanged() )
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: caikit-nlp
@@ -23,7 +25,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rhoai-tenant/caikit-nlp/caikit-nlp-213:on-pr-{{revision}}
+    value: quay.io/modh/caikit-nlp:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
   - name: dockerfile
@@ -236,9 +238,9 @@ spec:
       taskRef:
         params:
         - name: name
-          value: buildah
+          value: buildah-8gb
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-buildah:0.1@sha256:72e4ddd9b543e2766830e3a513da5c2fec26ea7a72a50e8c85be642912caa603
+          value: quay.io/konflux-ci/tekton-catalog/task-buildah-8gb:0.1
         - name: kind
           value: task
         resolver: bundles
@@ -254,8 +256,6 @@ spec:
       params:
       - name: BINARY_IMAGE
         value: $(params.output-image)
-      - name: BASE_IMAGES
-        value: $(tasks.build-container.results.BASE_IMAGES_DIGESTS)
       runAfter:
       - build-container
       taskRef:
@@ -281,8 +281,6 @@ spec:
         workspace: workspace
     - name: deprecated-base-image-check
       params:
-      - name: BASE_IMAGES_DIGESTS
-        value: $(tasks.build-container.results.BASE_IMAGES_DIGESTS)
       - name: IMAGE_URL
         value: $(tasks.build-container.results.IMAGE_URL)
       - name: IMAGE_DIGEST
@@ -475,4 +473,6 @@ spec:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
+  timeouts:
+    pipeline: 1h30m0s
 status: {}
