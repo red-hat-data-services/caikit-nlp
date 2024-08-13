@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as base
 
-RUN microdnf update -y --disablerepo=* --enablerepo=ubi-9-baseos-rpms --enablerepo=ubi-9-appstream-rpms && \
-    microdnf install -y --disablerepo=* --enablerepo=ubi-9-baseos-rpms --enablerepo=ubi-9-appstream-rpms \
+RUN microdnf update -y && \
+    microdnf install -y \
         git python-pip && \
     pip install --upgrade --no-cache-dir pip wheel && \
     microdnf clean all
