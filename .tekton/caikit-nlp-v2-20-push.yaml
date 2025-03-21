@@ -28,6 +28,13 @@ spec:
     value: quay.io/modh/caikit-nlp:{{target_branch}}
   - name: dockerfile
     value: Dockerfile
+  taskRunSpecs:
+    - pipelineTaskName: ecosystem-cert-preflight-checks
+      computeResources:
+        requests:
+          memory: 10Gi
+        limits:
+          memory: 10Gi 
   pipelineSpec:
     description: |
       This pipeline is ideal for building container images from a Containerfile while maintaining trust after pipeline customization.
