@@ -7,10 +7,9 @@ metadata:
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "pull_request" 
-      && target_branch == "rhoai-2.13"
-      && ( !".tekton/**".pathChanged() || ".tekton/caikit-nlp-213-pull-request.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/on-cel-expression: "event == \"pull_request\" \n&&
+      target_branch == \"rhoai-2.13\"\n&& ( !\".tekton/**\".pathChanged() || \".tekton/caikit-nlp-213-pull-request.yaml\".pathChanged()
+      )\n"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: caikit-nlp
@@ -457,7 +456,10 @@ spec:
       optional: true
     - name: netrc
       optional: true
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-caikit-nlp-213
+  timeouts:
+    pipeline: 1h30m0s
   workspaces:
   - name: workspace
     volumeClaimTemplate:
@@ -473,6 +475,4 @@ spec:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
-  timeouts:
-    pipeline: 1h30m0s
 status: {}
