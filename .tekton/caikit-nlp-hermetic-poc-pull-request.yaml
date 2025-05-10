@@ -17,8 +17,6 @@ metadata:
   name: caikit-nlp-hermetic-poc-on-pull-request
   namespace: rhoai-tenant
 spec:
-  timeouts:
-    pipeline: "2h30m"
   params:
   - name: git-url
     value: '{{source_url}}'
@@ -244,7 +242,7 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-      timeout: "0"
+      timeout: 0s
       when:
       - input: $(tasks.init.results.build)
         operator: in
@@ -436,7 +434,10 @@ spec:
     - name: workspace
     - name: git-auth
       optional: true
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-caikit-nlp-hermetic-poc
+  timeouts:
+    pipeline: 2h30m0s
   workspaces:
   - name: workspace
     volumeClaimTemplate:
