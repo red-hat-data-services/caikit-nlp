@@ -2,15 +2,14 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
+    build.appstudio.openshift.io/build-nudge-files: .*.env, .*.json
     build.appstudio.openshift.io/repo: https://github.com/red-hat-data-services/caikit-nlp?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    build.appstudio.openshift.io/build-nudge-files: ".*.env, .*.json"
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "push" 
-      && target_branch == "rhoai-2.16"
-      && ( !".tekton/**".pathChanged() || ".tekton/caikit-nlp-216-push.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/on-cel-expression: "event == \"push\" \n&& target_branch
+      == \"rhoai-2.16\"\n&& ( !\".tekton/**\".pathChanged() || \".tekton/caikit-nlp-216-push.yaml\".pathChanged()
+      )\n"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: caikit-nlp
@@ -406,8 +405,8 @@ spec:
       - name: IMAGE
         value: $(tasks.build-image-index.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
-        value: 
-          - '{{target_branch}}-{{revision}}'
+        value:
+        - '{{target_branch}}-{{revision}}'
       runAfter:
       - build-image-index
       taskRef:
@@ -469,11 +468,10 @@ spec:
       optional: true
     - name: netrc
       optional: true
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-caikit-nlp-216
   workspaces:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
 status: {}
-
-# restart
