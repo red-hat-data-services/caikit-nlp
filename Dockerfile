@@ -15,9 +15,10 @@ COPY pyproject.toml .
 COPY tox.ini .
 COPY caikit_nlp caikit_nlp
 # .git is required for setuptools-scm get the version
-RUN --mount=source=.git,target=.git,type=bind \
-    --mount=type=cache,target=/root/.cache/pip \
-     tox -e build
+COPY .git .git
+RUN --mount=type=cache,target=/root/.cache/pip \
+     tox -e build && \
+     rm -rf .git
 
 
 FROM base as deploy
@@ -28,9 +29,13 @@ ENV VIRTUAL_ENV=/opt/caikit
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY --from=builder /build/dist/caikit_nlp*.whl /tmp/
+
 RUN --mount=type=cache,target=/root/.cache/pip \
+    microdnf install -y gcc python3-devel && \
     pip install /tmp/caikit_nlp*.whl && \
-    rm /tmp/caikit_nlp*.whl
+    rm /tmp/caikit_nlp*.whl && \
+    microdnf remove -y gcc python3-devel && \
+    microdnf clean all
 
 COPY LICENSE /opt/caikit/
 COPY README.md /opt/caikit/
