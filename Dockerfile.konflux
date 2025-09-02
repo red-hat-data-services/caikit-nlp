@@ -54,3 +54,11 @@ VOLUME ["/caikit/"]
 WORKDIR /caikit
 
 CMD ["python"]
+
+LABEL name="rhoai/odh-caikit-nlp-rhel9" \
+      com.redhat.component="odh-caikit-nlp-rhel9" \
+      io.k8s.display-name="odh-caikit-nlp-rhel9" \
+      io.k8s.description="Caikit-NLP is a python library providing various Natural Language Processing (NLP) capabilities built on top of caikit framework." \
+      description="Caikit-NLP is a python library providing various Natural Language Processing (NLP) capabilities built on top of caikit framework." \
+      summary="Caikit-NLP is a python library providing various Natural Language Processing (NLP) capabilities built on top of caikit framework." \
+      com.redhat.license_terms="https://www.redhat.com/licenses/Red_Hat_Standard_EULA_20191108.pdf"
