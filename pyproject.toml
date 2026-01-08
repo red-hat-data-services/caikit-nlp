@@ -33,6 +33,7 @@ dependencies = [
     "tqdm>=4.65.0",
     "transformers>=4.38.0,<4.44.0",
     "peft==0.6.0",
+    "urllib3>=2.6.0", # unbounded decompression chain leads to resource exhaustion in urllib3 < 2.6.0
 ]
 
 [tool.setuptools.packages.find]
