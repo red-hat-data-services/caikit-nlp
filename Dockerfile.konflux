@@ -48,6 +48,8 @@ RUN groupadd --system caikit --gid 1001 && \
 USER caikit
 
 ENV RUNTIME_LIBRARY=caikit_nlp
+# Disable saving uploaded filenames to disk
+ENV UPLOAD_KEEP_FILENAME=false
 # Optional: use `CONFIG_FILES` and the /caikit/ volume to explicitly provide a configuration file and models
 # ENV CONFIG_FILES=/caikit/caikit.yml
 VOLUME ["/caikit/"]
