@@ -23,7 +23,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM base as deploy
 
-RUN python -m venv --upgrade-deps /opt/caikit/
+RUN microdnf install -y gcc python3.11 python3.11-devel && \
+    python3.11 -m venv --upgrade-deps /opt/caikit/
 
 ENV VIRTUAL_ENV=/opt/caikit
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -31,11 +32,10 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY --from=builder /build/dist/caikit_nlp*.whl /tmp/
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    microdnf install -y gcc python3-devel && \
     pip install /tmp/caikit_nlp*.whl && \
     rm /tmp/caikit_nlp*.whl && \
-    microdnf remove -y gcc python3-devel && \
-    pip install fastapi>=0.115.4 && \
+    microdnf remove -y gcc python3.11-devel && \
+    pip install "fastapi>=0.115.4" && \
     microdnf clean all
 
 COPY LICENSE /opt/caikit/
