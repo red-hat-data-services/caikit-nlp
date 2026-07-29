@@ -427,30 +427,46 @@ class CrossEncoderModule(ModuleBase):
 class CrossEncoderWithTruncate(CrossEncoder):
     def __init__(
         self,
-        model_name: str,
+        model_name: str = None,
+        model_name_or_path: str = None,
         num_labels: int = None,
         max_length: int = None,
         device: str = None,
         tokenizer_args: Dict = None,
         automodel_args: Dict = None,
+        processor_kwargs: Dict = None,
+        model_kwargs: Dict = None,
         trust_remote_code: bool = False,
         revision: Optional[str] = None,
         local_files_only: bool = False,
         default_activation_function=None,
+        activation_fn=None,
         classifier_dropout: float = None,
+        **kwargs,
     ):
+        name = model_name_or_path or model_name
+        if processor_kwargs is None and tokenizer_args is not None:
+            processor_kwargs = tokenizer_args
+        if model_kwargs is None and automodel_args is not None:
+            model_kwargs = automodel_args
+        if activation_fn is None:
+            activation_fn = default_activation_function
+        if classifier_dropout is not None:
+            model_kwargs = dict(model_kwargs or {})
+            model_kwargs.setdefault("classifier_dropout", classifier_dropout)
         super().__init__(
-            model_name,
-            num_labels,
-            max_length,
-            device,
-            tokenizer_args,
-            automodel_args,
-            trust_remote_code,
-            revision,
-            local_files_only,
-            default_activation_function,
-            classifier_dropout,
+            name,
+            modules=kwargs.pop("modules", None),
+            device=device,
+            trust_remote_code=trust_remote_code,
+            revision=revision,
+            local_files_only=local_files_only,
+            model_kwargs=model_kwargs,
+            processor_kwargs=processor_kwargs,
+            num_labels=num_labels,
+            max_length=max_length,
+            activation_fn=activation_fn,
+            **kwargs,
         )
         self.tokenizers = {}
 
@@ -603,7 +619,9 @@ class CrossEncoderWithTruncate(CrossEncoder):
         )
 
         if activation_fct is None:
-            activation_fct = self.default_activation_function
+            activation_fct = getattr(
+                self, "activation_fn", None
+            ) or getattr(self, "default_activation_function", None)
 
         max_len = self.tokenizer.model_max_length
         pred_scores = []

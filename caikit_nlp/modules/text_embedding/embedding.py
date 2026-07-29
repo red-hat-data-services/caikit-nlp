@@ -221,9 +221,12 @@ class EmbeddingModule(ModuleBase):
         Returns:
             Dict[str, str]: A dictionary of this models's public metadata
         """
+        dim_fn = getattr(
+            cls.model, "get_embedding_dimension", None
+        ) or getattr(cls.model, "get_sentence_embedding_dimension", None)
         return {
             "max_seq_length": cls.model.max_seq_length,
-            "sentence_embedding_dimension": cls.model.get_sentence_embedding_dimension(),
+            "sentence_embedding_dimension": dim_fn() if dim_fn else None,
         }
 
     @TokenizationTask.taskmethod()
@@ -918,27 +921,32 @@ class SentenceTransformerWithTruncate(SentenceTransformer):
         truncate_dim: Optional[int] = None,
         model_kwargs: Optional[Dict[str, Any]] = None,
         tokenizer_kwargs: Optional[Dict[str, Any]] = None,
+        processor_kwargs: Optional[Dict[str, Any]] = None,
         config_kwargs: Optional[Dict[str, Any]] = None,
         model_card_data: Optional[SentenceTransformerModelCardData] = None,
+        backend: Literal["torch", "onnx", "openvino"] = "torch",
     ):
+        if processor_kwargs is None and tokenizer_kwargs is not None:
+            processor_kwargs = tokenizer_kwargs
         super().__init__(
             model_name_or_path,
-            modules,
-            device,
-            prompts,
-            default_prompt_name,
-            similarity_fn_name,
-            cache_folder,
-            trust_remote_code,
-            revision,
-            local_files_only,
-            token,
-            use_auth_token,
-            truncate_dim,
-            model_kwargs,
-            tokenizer_kwargs,
-            config_kwargs,
-            model_card_data,
+            modules=modules,
+            device=device,
+            prompts=prompts,
+            default_prompt_name=default_prompt_name,
+            similarity_fn_name=similarity_fn_name,
+            cache_folder=cache_folder,
+            trust_remote_code=trust_remote_code,
+            revision=revision,
+            local_files_only=local_files_only,
+            token=token,
+            use_auth_token=use_auth_token,
+            truncate_dim=truncate_dim,
+            model_kwargs=model_kwargs,
+            processor_kwargs=processor_kwargs,
+            config_kwargs=config_kwargs,
+            model_card_data=model_card_data,
+            backend=backend,
         )
         self.tokenizers = {}
 
@@ -1147,7 +1155,7 @@ class SentenceTransformerWithTruncate(SentenceTransformer):
         # Sort sentences according to length, from longest to shortest
         # OOM errors then occurs at start of encoding
         length_sorted_idx = np.argsort(
-            [-self._text_length(sen) for sen in list_of_sentences]
+            [-self._input_length(sen) for sen in list_of_sentences]
         )
         sentences_sorted: list[str] = [
             list_of_sentences[idx] for idx in length_sorted_idx

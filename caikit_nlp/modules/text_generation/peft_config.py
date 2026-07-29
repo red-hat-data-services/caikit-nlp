@@ -206,7 +206,9 @@ def get_peft_config(
     torch_dtype = get_torch_dtype(torch_dtype)
 
     # Take tokenizer name/path from the model
-    tokenizer_name_or_path = base_model.model.config._name_or_path
+    tokenizer_name_or_path = getattr(
+        base_model.model.config, "_name_or_path", None
+    ) or getattr(base_model.model.config, "name_or_path", None)
 
     # Build the peft config; this is how we determine that we want a sequence classifier.
     # If we want more types, we will likely need to map this to data model outputs etc.

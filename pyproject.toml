@@ -9,7 +9,7 @@ dynamic = ["version"]
 description = "Caikit NLP"
 license = {text = "Apache-2.0"}
 readme = "README.md"
-requires-python = "~=3.9"
+requires-python = ">=3.10"
 classifiers=[
     "License :: OSI Approved :: Apache Software License"
 ]
@@ -27,14 +27,15 @@ dependencies = [
     "pandas>=1.5.0",
     "scikit-learn>=1.1",
     "scipy>=1.8.1",
-    "sentence-transformers>=3.0.0,<3.1.0",
-    "tokenizers>=0.13.3",
-    "torch>=2.3.1,<2.5.0",
+    "sentence-transformers>=5.2.0",
+    "tokenizers>=0.22.0,<=0.23.0",
+    "torch>=2.6.0",
     "tqdm>=4.65.0",
-    "transformers>=4.38.0,<4.44.0",
-    "peft==0.6.0",
+    "transformers==5.5.0",
+    "peft>=0.14.0",
     "urllib3>=2.6.3",
-    "aiohttp>=3.13.3", # HTTP Parser auto_decompress feature vulnerable to zip bomb
+    "aiohttp==3.14.*",
+    "starlette==1.0.1",
 ]
 
 [tool.setuptools.packages.find]
