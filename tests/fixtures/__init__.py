@@ -81,29 +81,61 @@ def downloaded_dataset(request):
     return load_dataset(dataset_path, dataset_name)
 
 
+def _set_hf_cache(path: str):
+    """Point Hugging Face / transformers caches at ``path``."""
+    # Third Party
+    import huggingface_hub.constants as hf_constants
+
+    previous = {
+        "HF_HUB_CACHE": getattr(hf_constants, "HF_HUB_CACHE", None),
+        "HUGGINGFACE_HUB_CACHE": getattr(hf_constants, "HUGGINGFACE_HUB_CACHE", None),
+        "env_HF_HUB_CACHE": os.environ.get("HF_HUB_CACHE"),
+        "env_TRANSFORMERS_CACHE": os.environ.get("TRANSFORMERS_CACHE"),
+        "env_HUGGINGFACE_HUB_CACHE": os.environ.get("HUGGINGFACE_HUB_CACHE"),
+    }
+    hf_constants.HF_HUB_CACHE = path
+    hf_constants.HUGGINGFACE_HUB_CACHE = path
+    os.environ["HF_HUB_CACHE"] = path
+    os.environ["HUGGINGFACE_HUB_CACHE"] = path
+    os.environ["TRANSFORMERS_CACHE"] = path
+    return previous, hf_constants
+
+
+def _restore_hf_cache(previous, hf_constants):
+    if previous.get("HF_HUB_CACHE") is not None:
+        hf_constants.HF_HUB_CACHE = previous["HF_HUB_CACHE"]
+    if previous.get("HUGGINGFACE_HUB_CACHE") is not None:
+        hf_constants.HUGGINGFACE_HUB_CACHE = previous["HUGGINGFACE_HUB_CACHE"]
+    for env_key, stored in (
+        ("HF_HUB_CACHE", "env_HF_HUB_CACHE"),
+        ("TRANSFORMERS_CACHE", "env_TRANSFORMERS_CACHE"),
+        ("HUGGINGFACE_HUB_CACHE", "env_HUGGINGFACE_HUB_CACHE"),
+    ):
+        old = previous.get(stored)
+        if old is None:
+            os.environ.pop(env_key, None)
+        else:
+            os.environ[env_key] = old
+
+
 @pytest.fixture
 def temp_cache_dir(request):
     """Use a temporary directory as our transformers / huggingface cache dir. We have permission
     to do things in this directory, but we don't have anything downloaded in it.
     """
-    old_cache_path = transformers.utils.hub.TRANSFORMERS_CACHE
-    # Create a new tempdir & cache it
     temp_dir = tempfile.TemporaryDirectory()
-    transformers.utils.hub.TRANSFORMERS_CACHE = temp_dir.name
+    previous, hf_constants = _set_hf_cache(temp_dir.name)
     yield
     temp_dir.cleanup()
-    if old_cache_path is not None:
-        transformers.utils.hub.TRANSFORMERS_CACHE = old_cache_path
+    _restore_hf_cache(previous, hf_constants)
 
 
 @pytest.fixture
 def models_cache_dir(request):
     """Use the tiny models directory as the HuggingFace Cache."""
-    old_cache_path = transformers.utils.hub.TRANSFORMERS_CACHE
-    transformers.utils.hub.TRANSFORMERS_CACHE = TINY_MODELS_DIR
+    previous, hf_constants = _set_hf_cache(TINY_MODELS_DIR)
     yield
-    if old_cache_path is not None:
-        transformers.utils.hub.TRANSFORMERS_CACHE = old_cache_path
+    _restore_hf_cache(previous, hf_constants)
 
 
 ### Fixtures for grabbing a randomly initialized model to test interfaces against

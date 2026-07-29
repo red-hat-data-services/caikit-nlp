@@ -19,7 +19,11 @@ from typing import List, Optional, Tuple, Union
 
 # Third Party
 from peft.peft_model import PeftModel
-from transformers import AutoModel, AutoTokenizer, StoppingCriteria, TextStreamer
+from transformers import AutoModel, AutoTokenizer, TextStreamer
+from transformers.generation.stopping_criteria import (
+    StoppingCriteriaList,
+    StopStringCriteria,
+)
 import numpy as np
 import torch
 
@@ -109,26 +113,6 @@ class Streamer(TextStreamer):
     # so we override that here
     def on_finalized_text(self, text: str, stream_end: bool = False):
         pass
-
-
-class SequenceStoppingCriteria(StoppingCriteria):
-    # pylint: disable-next=super-init-not-called # false positive: StoppingCriteria is an abc and has no __init__
-    def __init__(self, target_sequence_ids):
-        self.target_sequence_ids = target_sequence_ids
-
-    def __call__(self, input_ids, scores, **kwargs):
-        # Check if the target sequence appears in the generated text
-        for seq_id in self.target_sequence_ids:
-            if seq_id in input_ids:
-                return True  # Stop generation
-
-        return False  # Continue generation
-
-    def __len__(self):
-        return 1
-
-    def __iter__(self):
-        yield self
 
 
 def generate_text_func(
@@ -254,13 +238,19 @@ def generate_text_func(
         generate_ids[0, -1] == tokenizer.eos_token_id
     ):
         finish_reason = FinishReason.EOS_TOKEN
-    elif ("stopping_criteria" in gen_optional_params) and (
-        gen_optional_params["stopping_criteria"](
+    elif "stopping_criteria" in gen_optional_params:
+        stop_result = gen_optional_params["stopping_criteria"](
             generate_ids,
-            None,  # scores, unused by SequenceStoppingCriteria
+            None,
         )
-    ):
-        finish_reason = FinishReason.STOP_SEQUENCE
+        stopped = (
+            bool(stop_result.any())
+            if torch.is_tensor(stop_result)
+            else bool(stop_result)
+        )
+        finish_reason = (
+            FinishReason.STOP_SEQUENCE if stopped else FinishReason.MAX_TOKENS
+        )
     else:
         finish_reason = FinishReason.MAX_TOKENS
 
@@ -490,9 +480,8 @@ def __process_gen_args(
         gen_optional_params["seed"] = seed
 
     if stop_sequences and len(stop_sequences) > 0:
-        # Tokenize sequences
-        stop_sequence_ids = tokenizer.encode(stop_sequences)
-        stopping_criteria = SequenceStoppingCriteria(stop_sequence_ids)
-        gen_optional_params["stopping_criteria"] = stopping_criteria
+        gen_optional_params["stopping_criteria"] = StoppingCriteriaList(
+            [StopStringCriteria(tokenizer, stop_sequences)]
+        )
 
     return gen_optional_params
