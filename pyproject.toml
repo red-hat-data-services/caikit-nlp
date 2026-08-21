@@ -36,7 +36,6 @@ dependencies = [
     "urllib3>=2.6.3",
     "aiohttp==3.14.*",
     "starlette==1.0.1",
-    "python-multipart>=0.0.18",
 ]
 
 [tool.setuptools.packages.find]
