@@ -28,7 +28,7 @@ dependencies = [
     "scikit-learn>=1.1",
     "scipy>=1.8.1",
     "sentence-transformers>=5.2.0",
-    "tokenizers>=0.22.0,<=0.23.0",
+    "tokenizers>=0.23.1,<=0.23.1",
     "torch>=2.6.0",
     "tqdm>=4.65.0",
     "transformers==5.5.0",
