@@ -35,7 +35,7 @@ dependencies = [
     "peft>=0.14.0",
     "urllib3>=2.6.3",
     "aiohttp==3.14.*",
-    "starlette==1.0.1",
+    "starlette==1.6.0",
 ]
 
 [tool.setuptools.packages.find]
