@@ -35,7 +35,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install /tmp/caikit_nlp*.whl && \
     rm /tmp/caikit_nlp*.whl && \
     microdnf remove -y gcc python3.11-devel && \
-    pip install "fastapi>=0.135.4" && \
+    pip install "fastapi>=0.115.4" && \
     microdnf clean all
 
 COPY LICENSE /opt/caikit/
