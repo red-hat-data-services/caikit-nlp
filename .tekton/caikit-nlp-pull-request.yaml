@@ -25,10 +25,13 @@ spec:
     value: '{{revision}}'
   - name: output-image
     value: quay.io/rhoai/pull-request-pipelines:caikit-tgis-serving-{{revision}}
-  - name: additional-tags
+  - name: additional-labels
     value:
     - version=on-pr-{{revision}}
     - io.openshift.tags=caikit-nlp
+  - name: additional-tags
+    value:
+    - on-pr-{{revision}}
   - name: dockerfile
     value: Dockerfile
   - name: path-context
