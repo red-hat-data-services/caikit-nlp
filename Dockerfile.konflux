@@ -3,7 +3,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as base
 RUN microdnf update -y && \
     microdnf install -y \
         git python-pip && \
-    pip install --upgrade --no-cache-dir pip wheel && \
+    pip install --upgrade --no-cache-dir "pip>=26.2.1" wheel && \
     microdnf clean all
 
 FROM base as builder
