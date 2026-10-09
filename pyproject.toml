@@ -37,7 +37,7 @@ dependencies = [
     "peft>=0.20.0",
     "urllib3>=2.6.3",
     "aiohttp==3.14.*",
-    "starlette==1.0.1",
+    "starlette==1.7.0",
     "fastapi>=0.135.4,<0.142.0"
 ]
 
