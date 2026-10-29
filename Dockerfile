@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as base
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:bba2b4bbf0ed15cfe7dd72a1e17ae7d2015a141f306b304e1a2785c41400e39c AS base
 
 RUN microdnf update -y && \
     microdnf install -y \
@@ -32,6 +32,9 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY --from=builder /build/dist/caikit_nlp*.whl /tmp/
 
 RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade --no-cache-dir \
+        "certifi>=2026.10.19" \
+        "pip>=26.2.2" && \
     pip install /tmp/caikit_nlp*.whl && \
     rm /tmp/caikit_nlp*.whl && \
     microdnf remove -y gcc python3.11-devel && \
